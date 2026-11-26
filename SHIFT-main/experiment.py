@@ -13,6 +13,7 @@ from sklearn.linear_model import LinearRegression
 from simulator import restoring_force, generate_dataset, make_force, validate_force_spec
 from train import TrainConfig, Normalizer, train_mlp, predict_mlp, set_seed
 from evaluate import evaluate
+from config import ExperimentConfig
 
 SEEDS = {"train": 0, "val": 1, "test": 2}          # data-generation seeds (distinct)
 SIZES = {"train": 128, "val": 32, "test": 32}      # whole trajectories per split
@@ -112,6 +113,7 @@ def run_experiment(cfg, out_dir, seeds=SEEDS, sizes=SIZES, n_steps=N_STEPS, dt=D
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "metrics.json"), "w") as fh:
         json.dump(record, fh, indent=2)
+    ExperimentConfig.from_baseline(cfg, seeds, sizes, n_steps, dt, phys, force).save(out_dir)   # effective config
 
     law = (f"k={phys['k']:g}, centre=({phys['center_x']:g}, {phys['center_y']:g})" if force is None
            else f"constant force fx={force['fx']:g}, fy={force['fy']:g}")
@@ -135,6 +137,14 @@ def run_experiment(cfg, out_dir, seeds=SEEDS, sizes=SIZES, n_steps=N_STEPS, dt=D
     fig.suptitle(label, fontsize=9)
     plt.tight_layout(); plt.savefig(os.path.join(out_dir, "prediction_comparison.png"), dpi=120); plt.close()
     return record
+
+
+def run_from_config(ec, out_dir):
+    """Run the baseline experiment described by an ExperimentConfig (validated first)."""
+    ec.validate("baseline")
+    phys, force = ec.baseline_args()
+    return run_experiment(ec.train_config(), out_dir, ec.seeds(), ec.sizes(), ec.simulation.n_steps,
+                          ec.simulation.dt, phys, force)
 
 
 def main(argv=None):
@@ -177,7 +187,7 @@ def main(argv=None):
         p.error("--fx/--fy require --force constant")
     is_default = all(getattr(a, k) == p.get_default(k) for k in vars(a) if k not in ("out", "overwrite"))
     try:
-        validate_params(phys, a.dt, a.n_steps, sizes, seeds, cfg, force)
+        ExperimentConfig.from_baseline(cfg, seeds, sizes, a.n_steps, a.dt, phys, force).validate("baseline")
         check_overwrite(a.out, is_default, a.overwrite)
     except (ValueError, FileExistsError) as e:
         p.error(str(e))

@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 from simulator import restoring_force, generate_dataset, export_transitions, make_force, validate_force_spec
 from train import TrainConfig, Normalizer, train_mlp, predict_mlp, params_fingerprint
 from evaluate import evaluate, relative_improvement
+from config import ExperimentConfig
 
 K_OLD, K_NEW = 1.0, 9.0
 CENTER = (0.0, 0.0)
@@ -242,9 +243,10 @@ def main(argv=None):
     if all(specs.values()) and center != CENTER:
         p.error("--center-x/--center-y are not used when both worlds use constant forces")
     sizes = {"train": a.n_train, "val": a.n_val, "test": a.n_test}
+    ec = ExperimentConfig.from_adaptation(a.seeds, a.budgets, a.epochs, a.hidden, a.lr, a.batch_size, sizes,
+                                          a.n_steps, a.k_old, a.k_new, center, a.dt, specs["old"], specs["new"])
     try:
-        validate_params(a.k_old, a.k_new, center, a.dt, a.n_steps, sizes, a.budgets, a.seeds,
-                        specs["old"], specs["new"])
+        ec.validate("adaptation")
     except ValueError as e:
         p.error(str(e))
     runs = []
@@ -272,6 +274,7 @@ def main(argv=None):
             meta["config"][f"force_{side}"] = specs[side]
     with open(os.path.join(a.out, "metrics.json"), "w") as fh:
         json.dump(meta, fh, indent=2)
+    ec.save(a.out)   # effective config
     from plot_adaptation import plot_all
     plot_all(agg, a.budgets, a.out, n_seeds=len(a.seeds),
              info={"k_old": a.k_old, "k_new": a.k_new, "n_steps": a.n_steps,
