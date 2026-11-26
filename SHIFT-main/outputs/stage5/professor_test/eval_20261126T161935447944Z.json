@@ -1,0 +1,53 @@
+{
+  "stage": 5,
+  "timestamp_utc": "2026-11-26T16:19:35+00:00",
+  "checkpoint": {
+    "path": "checkpoints/baseline.pt",
+    "fingerprint": "8829788de35ab6549961e2edd33fe0d1eab351a4f3cc4cfd6285e95118ac4a34",
+    "architecture": {
+      "type": "MLP",
+      "in_dim": 4,
+      "hidden": 64,
+      "out_dim": 2
+    },
+    "training_force": {
+      "name": "restoring",
+      "k": 1.0,
+      "center_x": 0.0,
+      "center_y": 0.0
+    },
+    "training_simulation": {
+      "dt": 0.01,
+      "n_steps": 200
+    }
+  },
+  "force": {
+    "name": "restoring",
+    "k": 5.0
+  },
+  "simulation": {
+    "dt": 0.01,
+    "n_steps": 200,
+    "n_particles": 100
+  },
+  "seed": 42,
+  "test_data": {
+    "source": "generated",
+    "path": null,
+    "n_samples": 20000
+  },
+  "metrics": {
+    "accel_mse": 3.157949810465022,
+    "accel_mae": 1.4734661370512772,
+    "accel_rmse": 1.7770621290391122,
+    "n_samples": 20000
+  },
+  "model_unchanged": true,
+  "limitations": [
+    "Metrics measure acceleration error only, on this one force configuration; they do not show that the model generalises to other physical environments.",
+    "The model only sees (x, y, vx, vy) and was trained on a limited state range; states far outside that range are extrapolation.",
+    "The evaluation force differs from the force the checkpoint was trained on (or the checkpoint does not record it): this measures out-of-distribution behaviour.",
+    "Generated states come from random initial conditions; the seed is checked against all recorded train/validation/test split seeds."
+  ],
+  "results_path": "outputs/stage5/professor_test/eval_20261126T161935447944Z.json"
+}

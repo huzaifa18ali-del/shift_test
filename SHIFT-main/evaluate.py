@@ -29,3 +29,8 @@ def relative_improvement(baseline_err, new_err, eps=1e-12):
     if baseline_err <= eps:
         return None
     return float((baseline_err - new_err) / baseline_err)
+
+if __name__ == "__main__":      # Stage 5: `python evaluate.py --checkpoint ... --help`
+    import sys
+    from independent_eval import main
+    sys.exit(main())

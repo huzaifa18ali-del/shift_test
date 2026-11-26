@@ -25,9 +25,9 @@
     "device": "cpu"
   },
   "versions": {
-    "torch": "2.14.1+cu130",
+    "torch": "2.15.0+cpu",
     "sklearn": "1.9.1",
-    "numpy": "2.5.4"
+    "numpy": "2.5.5"
   },
   "final_train_loss_normalised": 1.1536541101122567e-05,
   "final_val_loss_normalised": 1.4996152458479628e-05,
