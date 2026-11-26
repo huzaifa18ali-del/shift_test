@@ -1,0 +1,87 @@
+{
+  "data_seeds": {
+    "train": 0,
+    "val": 1,
+    "test": 2
+  },
+  "trajectories_per_split": {
+    "train": 128,
+    "val": 32,
+    "test": 32
+  },
+  "n_steps": 200,
+  "dt": 0.01,
+  "physics": {
+    "k": 1.0,
+    "center_x": 0.0,
+    "center_y": 0.0
+  },
+  "mlp_config": {
+    "hidden": 64,
+    "lr": 0.001,
+    "batch_size": 256,
+    "epochs": 100,
+    "seed": 0,
+    "device": "cpu"
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "sklearn": "1.9.1",
+    "numpy": "2.5.4"
+  },
+  "final_train_loss_normalised": 1.1536541101122567e-05,
+  "final_val_loss_normalised": 1.4996152458479628e-05,
+  "metrics": {
+    "linear_regression": {
+      "test": {
+        "accel_mse": 4.415226592370897e-32,
+        "accel_mae": 1.6330134855001406e-16,
+        "next_state_mse": 6.085172606023112e-35
+      },
+      "val": {
+        "accel_mse": 3.994286338074192e-32,
+        "accel_mae": 1.6122940630230985e-16,
+        "next_state_mse": 5.085688514098299e-35
+      }
+    },
+    "mlp": {
+      "test": {
+        "accel_mse": 5.875555756369149e-06,
+        "accel_mae": 0.0017581675446650639,
+        "next_state_mse": 2.9380716559724227e-10
+      },
+      "val": {
+        "accel_mse": 5.220623568957604e-06,
+        "accel_mae": 0.0017555587789999227,
+        "next_state_mse": 2.610572815657207e-10
+      }
+    },
+    "analytical_oracle (simulator reference, not a learned model)": {
+      "test": {
+        "accel_mse": 0.0,
+        "accel_mae": 0.0,
+        "next_state_mse": 0.0
+      }
+    },
+    "linear_coefficients": {
+      "coef": [
+        [
+          -1.0000000000000002,
+          8.239276192123505e-17,
+          4.876248429703749e-17,
+          -1.4748361404037657e-16
+        ],
+        [
+          5.587923276345332e-17,
+          -1.0000000000000002,
+          -3.0624296680986595e-16,
+          -1.353123571769575e-16
+        ]
+      ],
+      "intercept": [
+        1.3877787807814457e-17,
+        0.0
+      ]
+    }
+  }
+}
