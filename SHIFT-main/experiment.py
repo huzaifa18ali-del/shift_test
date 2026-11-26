@@ -73,9 +73,14 @@ def make_splits(seeds=SEEDS, sizes=SIZES, n_steps=N_STEPS, dt=DT, phys=PHYS, for
     return out
 
 
-def run_experiment(cfg, out_dir, seeds=SEEDS, sizes=SIZES, n_steps=N_STEPS, dt=DT, phys=PHYS, force=None):
+def run_experiment(cfg, out_dir, seeds=SEEDS, sizes=SIZES, n_steps=N_STEPS, dt=DT, phys=PHYS, force=None,
+                   checkpoint_path=None, overwrite_checkpoint=False):
+    """Run the baseline experiment. Optional Stage 4: ``checkpoint_path`` saves the trained MLP (see checkpoint.py)."""
     validate_params(phys, dt, n_steps, sizes, seeds, cfg, force)
     phys, force = resolve_force(phys, force)
+    if checkpoint_path is not None:      # fail BEFORE training if the file could not be written
+        from checkpoint import check_can_write
+        check_can_write(checkpoint_path, overwrite_checkpoint)
     set_seed(cfg.seed)
     d = make_splits(seeds, sizes, n_steps, dt, phys, force)
     # trajectories never shared across splits: seeds differ => initial states differ
@@ -113,7 +118,17 @@ def run_experiment(cfg, out_dir, seeds=SEEDS, sizes=SIZES, n_steps=N_STEPS, dt=D
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "metrics.json"), "w") as fh:
         json.dump(record, fh, indent=2)
-    ExperimentConfig.from_baseline(cfg, seeds, sizes, n_steps, dt, phys, force).save(out_dir)   # effective config
+    ec = ExperimentConfig.from_baseline(cfg, seeds, sizes, n_steps, dt, phys, force)
+    ec.save(out_dir)   # effective config
+    if checkpoint_path is not None:
+        from checkpoint import save_checkpoint
+        save_checkpoint(checkpoint_path, model, x_norm, y_norm, force=ec.force,
+                        simulation={"dt": dt, "n_steps": n_steps}, train_config=cfg, experiment_config=ec,
+                        training_metadata={"final_train_loss_normalised": hist["train_loss"][-1],
+                                           "final_val_loss_normalised": hist["val_loss"][-1],
+                                           "best_epoch": hist["best_epoch"], "steps": hist["steps"],
+                                           "epochs": cfg.epochs, "pipeline": "baseline"},
+                        overwrite=overwrite_checkpoint)
 
     law = (f"k={phys['k']:g}, centre=({phys['center_x']:g}, {phys['center_y']:g})" if force is None
            else f"constant force fx={force['fx']:g}, fy={force['fy']:g}")
@@ -171,6 +186,8 @@ def main(argv=None):
     p.add_argument("--seed-val", type=int, default=SEEDS["val"])
     p.add_argument("--seed-test", type=int, default=SEEDS["test"])
     p.add_argument("--overwrite", action="store_true", help="allow a non-default run to replace an existing metrics.json")
+    p.add_argument("--save-checkpoint", default=None, metavar="PATH", help="save the trained MLP to this checkpoint file")
+    p.add_argument("--overwrite-checkpoint", action="store_true", help="allow replacing an existing checkpoint file")
     a = p.parse_args(argv)
     cfg = TrainConfig(a.hidden, a.lr, a.batch_size, a.epochs, a.seed, a.device)
     phys = {"k": a.k, "center_x": a.center_x, "center_y": a.center_y}
@@ -185,13 +202,16 @@ def main(argv=None):
         force = {"name": "constant", "fx": a.fx, "fy": a.fy}
     elif a.fx is not None or a.fy is not None:
         p.error("--fx/--fy require --force constant")
-    is_default = all(getattr(a, k) == p.get_default(k) for k in vars(a) if k not in ("out", "overwrite"))
+    is_default = all(getattr(a, k) == p.get_default(k) for k in vars(a) if k not in ("out", "overwrite", "save_checkpoint", "overwrite_checkpoint"))
     try:
         ExperimentConfig.from_baseline(cfg, seeds, sizes, a.n_steps, a.dt, phys, force).validate("baseline")
         check_overwrite(a.out, is_default, a.overwrite)
+        if a.save_checkpoint is not None:
+            from checkpoint import check_can_write
+            check_can_write(a.save_checkpoint, a.overwrite_checkpoint)
     except (ValueError, FileExistsError) as e:
         p.error(str(e))
-    rec = run_experiment(cfg, a.out, seeds, sizes, a.n_steps, a.dt, phys, force)
+    rec = run_experiment(cfg, a.out, seeds, sizes, a.n_steps, a.dt, phys, force, a.save_checkpoint, a.overwrite_checkpoint)
     print(json.dumps(rec["metrics"], indent=2))
     return rec
 
